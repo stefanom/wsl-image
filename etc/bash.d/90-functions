@@ -1,0 +1,42 @@
+# Simulate the 'notify-send' Linux command in WSL
+function notify-send() {
+    /usr/bin/wsl-notify-send.exe --appId $WSL_DISTRO_NAME "${@}"
+}
+
+# A different wrapper that's easier to use: toast <title> <message>
+function toast() {
+    /usr/bin/wsl-notify-send.exe --appId "$WSL_DISTRO_NAME" --category "$1" "${@:2}"
+}
+
+# A function that updates local WSL clock from an official NTP server
+function update-clock {
+    # WSL has clock skew issue (see https://github.com/microsoft/WSL/issues/10006)
+
+    # Update the system clock via NTP
+    sudo ntpdate pool.ntp.org
+
+    # Update the hardware clock (which sometimes drifts)
+    sudo hwclock -s
+}
+
+# update: updates the current distribution using various package managers when present
+function update {
+    echo "------------- updating clock -------------"
+    update-clock
+
+    if command -v apt &> /dev/null ; then
+        echo "------------- updating apt -------------" 
+        sudo apt -y update
+        sudo apt -y full-upgrade
+    fi
+
+    if command -v nix-env &> /dev/null ; then
+        echo "------------- updating nix -------------" 
+        nix-env -u
+    fi
+
+    if command -v rustup &> /dev/null ; then
+        echo "------------- updating rustup -------------" 
+        rustup update
+    fi
+}

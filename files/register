@@ -1,0 +1,115 @@
+#!/bin/bash
+
+# this is needed because some programs complain with it
+export LANGUAGE=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+export LC_CTYPE=en_US.UTF-8
+
+# Show the S6 branding via motd
+run-parts /etc/update-motd.d/
+
+echo ""
+echo "I'm going to ask you a few questions to guide the image configuration."
+echo ""
+read -p "Enter your full name: " FULLNAME
+read -p "Enter your full email address: " EMAIL
+read -p "Enter the username you'd like to use (does not need to match you email): " USERNAME
+
+while true; do
+    read -p "Enter the password for your account (does not need to be strong): " -s PASSWORD
+    echo '\n'
+    read -p "Enter the password again to be sure you typed it right: " -s PASSWORD2
+    echo '\n'
+    if [ "$PASSWORD" != "$PASSWORD2" ]; then
+        echo "Hmmm, the passwords did not match. Let's try again..."
+    else
+        break
+    fi
+done
+
+echo ""
+echo "You typed:"
+echo ""
+echo "  Full Name: $FULLNAME"
+echo "  Email: $EMAIL"
+echo "  WSL Username: $USERNAME"
+echo "  Both passwords you typed matched."
+echo ""
+read -p "Should I continue with the configuration? [y/N]" CONTINUE 
+
+if [ "${CONTINUE^^}" != "Y" ]; then
+    exit
+fi
+
+echo ""
+
+# add the user
+useradd -m -c "$FULLNAME" -s /bin/bash "$USERNAME"
+echo "> I created the new user $USERNAME"
+
+# save the password
+echo "$USERNAME:$PASSWORD" | chpasswd
+echo "> I gave the password to $USERNAME"
+
+# make sure the user is part of sudoers
+usermod -aG sudo $USERNAME
+echo "> I made sure $USERNAME can execute 'sudo'"
+
+# make the user be the WSL default
+sed -i "s/default=root/default=$USERNAME/" /etc/wsl.conf
+echo "> I made $USERNAME the default WSL user"
+
+# set the git configs
+echo "[user]
+        name = $FULLNAME
+        email = $EMAIL
+[init]
+        defaultBranch = main" > /home/$USERNAME/.gitconfig
+echo "> I configured git for $USERNAME to use $FULLNAME ($EMAIL) when committing to a remote repo."
+
+# create paths in the user folder that we need
+mkdir -p /home/$USERNAME/.local/bin
+mkdir -p /home/$USERNAME/.config
+mkdir -p /home/$USERNAME/.ssh
+echo "> I created useful configuration directories in /home/$USERNAME."
+
+# make sure all the right permissions are set
+chown -R $USERNAME:$USERNAME /home/$USERNAME
+echo "> I made sure all the right permissions in /home/$USERNAME are set."
+
+# Get the current time zone
+TIMEZONE=$(</etc/timezone)
+
+# Prompt the user with the current time zone and ask if they want to change it
+echo ""
+read -p "The current time zone is set to $TIMEZONE. Do you want to change it? [y/N] " answer
+
+if [ "${answer^^}" = "Y" ]; then
+    # Launch the time zone configuration tool on the command line
+    dpkg-reconfigure --frontend=teletype tzdata
+fi
+
+# remove the indication this is a docker container, if present
+test -f /.dockerenv && rm /.dockerenv 
+
+echo "We're all set!"
+echo ""
+echo "Now, remember to execute the command"
+echo ""
+echo "  wsl --terminate UbuntuS6"
+echo ""
+echo "to restart this image or it won't default to your new user until"
+echo "your machine reboots."
+echo ""
+echo "After that, start the image again with"
+echo ""
+echo "  wsl -d UbuntuS6"
+echo ""
+echo "which will start with your new user".
+echo ""
+echo "Enjoy Linux on Windows!"
+echo ""
+
+# exit WSL
+exit

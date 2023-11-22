@@ -1,0 +1,5 @@
+#!/bin/sh
+
+echo ""
+echo "     Your ASCII logo here!"
+echo ""

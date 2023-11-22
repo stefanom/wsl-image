@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# Start with the home directory
+cd ~
