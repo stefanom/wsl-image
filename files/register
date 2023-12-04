@@ -6,7 +6,7 @@ export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 export LC_CTYPE=en_US.UTF-8
 
-# Show the S6 branding via motd
+# Show the branding via motd
 run-parts /etc/update-motd.d/
 
 echo ""
@@ -97,14 +97,14 @@ echo "We're all set!"
 echo ""
 echo "Now, remember to execute the command"
 echo ""
-echo "  wsl --terminate UbuntuS6"
+echo "  wsl --terminate <image>"
 echo ""
 echo "to restart this image or it won't default to your new user until"
 echo "your machine reboots."
 echo ""
 echo "After that, start the image again with"
 echo ""
-echo "  wsl -d UbuntuS6"
+echo "  wsl -d <image>"
 echo ""
 echo "which will start with your new user".
 echo ""
